@@ -1,7 +1,16 @@
-const { Builder, By, until} = require('selenium-webdriver');
+const { Builder, By, until, checkedLocator} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const { faker } = require ('@faker-js/faker');
 const { generate } = require('gerador-validador-cpf');
+
+async function getElement(driver, locator) {
+    await driver.wait(
+        until.elementLocated(locator),
+        15000 // espera até 10 segundos
+    );
+
+    return await driver.findElement(locator);
+}
 
 
 async function test() {
@@ -15,7 +24,7 @@ async function test() {
     try{
         await driver.get('https://minhacooper.com.br/?gad_source=1&gclid=CjwKCAjwzMi_BhACEiwAX4YZUBzrfoaG7AavsxVaRixdne-fB4P0GN8XzFfa5IVwKca-ewTvFwiB5RoC1aYQAvD_BwE');
         
-        //botaoLogin
+        botaoLogin
        
         let botaoLogin = await driver.wait(until.elementLocated(By.className('btn-account')),10000);
         botaoLogin.click();
@@ -45,11 +54,10 @@ async function test() {
     
     try{
         //nome do usuario
-        await driver.executeScript("document.getElementById('customer_firstname').style.display = 'block';");
 
         const nomeUsuario = await driver.wait(until.elementLocated(By.id('customer_firstname')),10000);       
        await driver.wait(until.elementIsVisible(nomeUsuario), 10000);
-       await driver.wait(until.elementIsEnabled(nomeUsuario), 10000);
+       await driver.wait(until.elementIsEnabled(nomeUsuario), 10000); //IsEnabled é para verificar se é true or false
        await nomeUsuario.sendKeys(faker.person.fullName());
         
 
@@ -79,48 +87,26 @@ async function test() {
         console.log ("erro ao adicionar CPF",error);
 
     }
-
-    try{
-        await driver.executeScript(`
-            document.getElementsByClassName('form-group')[6].style.display = 'block';
-        `); 
-        let radioButton = await driver.findElement(By.css('input[type="radio"][value="1"]'));
-        await driver.wait(until.elementIsVisible(radioButton), 5000);
-        await driver.wait(until.elementIsEnabled(radioButton), 5000);
-        await radioButton.click();
-        /*await driver.executeScript(`
-            const radio = document.getElementById('genero-feminino');
-            if (radio) {
-                radio.style.display = 'block';  // torna visível, se estiver escondido
-                radio.checked = true;           // marca o botão
-                radio.dispatchEvent(new Event('change', { bubbles: true })); // simula a ação do usuário
-            }
-        `);
-        await driver.executeScript(`document.getElementById('${generoId}').click();`);
-
-        
-      
-        /*await driver.executeScript("document.getElementById('genero-feminimo').style.display = 'block';");
-        let genero = await driver.findElement(By.id('genero-feminino'));
-        await genero.click();
-
-       
-
-       
-        const genero = Math.random() < 0.5 ? 'genero-feminino' : 'genero-masculino';
-        const radioGenero = await driver.wait(until.elementLocated(By.id(genero)), 10000);
-        await driver.wait(until.elementIsVisible(radioGenero), 10000);
-        await driver.wait(until.elementIsEnabled(radioGenero), 10000);
-        await radioGenero.click();*/
-
-        console.log("genero selecionado");
-    }catch(error){
-
-        console.log ("erro ao selecionar o genero",error);
-        
+    
+    
+    async function definirGenero() {
+        let options = new chrome.Options();
+        options.options_['debuggerAddress'] = 'localhost:9222';
+    
+        let driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build();
+    
+        let id = 'genero-feminimo';
+    
+        await driver.executeScript(`document.getElementById("${id}").click()`);
     }
+    
+    definirGenero();
+
+
+
 
     try{
+
         //data de nascimento
 
         await driver.executeScript("document.getElementById('customer_dateOfBirth_presentation').style.display = 'block';");
@@ -169,18 +155,11 @@ async function test() {
     //BOTAO PARA PASSAR PARA O PROXIMO BLOCO
 
     try{
-        //primeiro botao avançar
-        let botoesAvancar = await driver.wait(
-            until.elementsLocated(By.css('.button-default.btn-cadastro-next-step')),
-            10000
-        );
+        let botao_avançar = await driver.wait(until.elementLocated(By.className('button.button-default.btn-cadastro-next-step')),10000);
+        await driver.wait(until.elementIsVisible(botao_avançar), 10000);
+       await driver.wait(until.elementIsEnabled(botao_avançar), 10000);
+        botao_avançar.click();
         
-        if (botaoAvançar.length >= 1) {
-            await driver.wait(until.elementIsVisible(botaoAvançar[0]), 5000);
-            await driver.wait(until.elementIsVisible(botaoAvançar[0]), 5000);
-            await botaoAvançar[0].click();
-            //console.log("Primeiro botão 'Avançar' clicado com sucesso.");
-        }
         console.log("botao avançar selecionado");
 
     }catch(error){
@@ -218,7 +197,7 @@ async function test() {
        await driver.wait(until.elementIsVisible(numeroCasa ), 10000);
        await driver.wait(until.elementIsEnabled(numeroCasa ), 10000);
 
-        const numeroAleatorio = faker.number.int({ max: 9999 });
+        const numeroAleatorio = faker.number.int({ max: 999 });
         await numeroCasa.sendKeys(numeroAleatorio.toString());
 
         console.log("numero da casa adicionado ");
@@ -251,22 +230,15 @@ async function test() {
 
 
     try{
-    //segundo botao avançar
-    let botoesAvancar = await driver.wait(
-        until.elementsLocated(By.css('.button-default.btn-cadastro-next-step')),
-        10000
-    );
-    
-        if (botaoAvançar.length >= 1) {
-          await driver.wait(until.elementIsVisible(botaoAvançar[1]), 5000);
-          await driver.wait(until.elementIsEnabled(botaoAvançar[1]), 5000);
-          await botaoAvançar[1].click();
-     
-        }
-        console.log("botão 'Avançar' clicado ");
+        let botao_proximo = await driver.wait(until.elementLocated(By.className('button button-default btn-cadastro-next-step')),10000);
+        await driver.wait(until.elementIsVisible(botao_proximo), 10000);
+        await driver.wait(until.elementIsEnabled(botao_proximo), 10000);
+        botao_proximo.click();
+        
+        console.log("botão proximo clicado ");
     }catch(error){
 
-        console.log("erro ao clicar o botao avançar", error);
+        console.log("erro ao clicar o botao proximo", error);
 
     }
     
@@ -346,7 +318,8 @@ async function test() {
     finally{
 
     }
-   
+   //revisar o cep, numero da casa e os botoes
 }
-
 test();
+
+
